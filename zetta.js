@@ -10,6 +10,7 @@ var PubSub = require('./lib/pubsub_service');
 var Runtime = require('./lib/runtime');
 var scientist = require('zetta-scientist');
 var Query = require('calypso').Query;
+var CloudSocket = require('cloud-socket');
 
 var Zetta = module.exports = function(opts) {
   if (!(this instanceof Zetta)) {
@@ -52,6 +53,14 @@ var Zetta = module.exports = function(opts) {
   httpScout.server = this.runtime;
   this.httpScout = httpScout;
   this._scouts.push(httpScout);
+
+  //-----ECLUB STUFF -------//
+
+  this._cloudSocket = '';
+  this._uuid = "00000001";
+  this._concentratorScout = '';
+
+  //----- !!!! --------//
 };
 
 Zetta.prototype.silent = function() {
@@ -75,6 +84,29 @@ Zetta.prototype.name = function(name) {
   this.id = this._name;
   return this;
 };
+
+
+/// ECLUB STUFF ---------------------------------
+
+Zetta.prototype.credentials = function(username, password) {
+	if(username === '*') {
+		throw new Error('Cannot set username to: '+username);
+	}
+	this._username = username;
+	this._password = password;
+	//console.log("Username: "+username+"\nPassword: "+password);
+};
+
+Zetta.prototype.cloud = function(address) {
+  console.log("Setting up cloud: "+ address);
+  this._cloudSocket = new CloudSocket(address, this);
+};
+
+Zetta.prototype.getName = function() {
+  return this._name;
+};
+
+/// ---------------------------------------------
 
 Zetta.prototype.properties = function(props) {
   var self = this;
@@ -102,6 +134,15 @@ Zetta.prototype.use = function() {
   function addScout(scout) {
     scout.server = self.runtime;
     self._scouts.push(scout);
+
+  ///-----------ECLUB ------------------
+  //If the scout is ours, save it!
+  if(scout._name === 'ConcentratorScout') {
+      self._concentratorScout = scout;
+  }
+
+  ///-----------!!! --------------------
+
   }
 
   function init() {
