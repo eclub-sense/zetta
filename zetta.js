@@ -58,6 +58,7 @@ var Zetta = module.exports = function(opts) {
 
   this._cloudSocket = '';
   this._uuid = "00000001";
+  this._cloud = '';
   this._concentratorScout = '';
 
   //----- !!!! --------//
@@ -98,8 +99,7 @@ Zetta.prototype.credentials = function(username, password) {
 };
 
 Zetta.prototype.cloud = function(address) {
-  console.log("Setting up cloud: "+ address);
-  this._cloudSocket = new CloudSocket(address, this);
+  this._cloud = address;
 };
 
 Zetta.prototype.getName = function() {
@@ -260,6 +260,13 @@ Zetta.prototype.listen = function() {
       }
 
       self.log.emit('log', 'server', 'Server (' + self._name + ') ' + self.id + ' listening on ' + host);
+
+      /// ECLUB STUFF           ///
+
+      console.log("Setting up cloud: "+ self._cloud);
+      self._cloudSocket = new CloudSocket(self._cloud, self);
+
+      ///---------------------- ///
 
       if (callback) {
         callback(err);
