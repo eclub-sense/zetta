@@ -11,6 +11,7 @@ var Runtime = require('./lib/runtime');
 var scientist = require('zetta-scientist');
 var Query = require('calypso').Query;
 var CloudSocket = require('cloud-socket');
+var HubSocket = require('hub-socket');
 
 var Zetta = module.exports = function(opts) {
   if (!(this instanceof Zetta)) {
@@ -57,8 +58,10 @@ var Zetta = module.exports = function(opts) {
   //-----ECLUB STUFF -------//
 
   this._cloudSocket = '';
+  this._hubSocket = '';
   this._uuid = "00000001";
   this._cloud = '';
+  this._onCloud = false;
   this._concentratorScout = '';
 
   //----- !!!! --------//
@@ -104,6 +107,10 @@ Zetta.prototype.cloud = function(address) {
 
 Zetta.prototype.getName = function() {
   return this._name;
+};
+
+Zetta.prototype.onCloud = function(onCloud) {
+  this._onCloud = onCloud;
 };
 
 /// ---------------------------------------------
@@ -263,8 +270,8 @@ Zetta.prototype.listen = function() {
 
       /// ECLUB STUFF           ///
 
-      console.log("Setting up cloud: "+ self._cloud);
-      self._cloudSocket = new CloudSocket(self._cloud, self);
+      //console.log("Setting up cloud: "+ self._cloud);
+      //self._cloudSocket = new CloudSocket(self._cloud, self);
 
       ///---------------------- ///
 
@@ -317,6 +324,12 @@ Zetta.prototype._run = function(callback) {
       self._cleanupPeers(next);
     },
     function(next) {
+      self._initCloudSocket(next);
+    },
+    function(next) {
+      self._initHubSocket(next);
+    },
+    function(next) {
       self._initPeers(self._peers, next);
       self.link = function(peers, cb) {
         self._initPeers(peers, (cb || function() {}) );
@@ -329,6 +342,20 @@ Zetta.prototype._run = function(callback) {
   });
 
   return this;
+};
+
+Zetta.prototype._initCloudSocket = function(callback) {
+  console.log("Setting up cloud: "+ this._cloud);
+  this._cloudSocket = new CloudSocket(this._cloud, this);
+  callback();
+};
+
+Zetta.prototype._initHubSocket = function(callback) {
+  if(this._onCloud === true) {
+    console.log("Setting up HUB webServer!");
+    this._hubSocket = new HubSocket(this);
+  }
+  callback();
 };
 
 Zetta.prototype._initScouts = function(callback) {
