@@ -62,7 +62,9 @@ var Zetta = module.exports = function(opts) {
   this._uuid = "00000001";
   this._cloud = '';
   this._onCloud = false;
+  //Our scouts
   this._concentratorScout = '';
+  this._hubScout = undefined;
 
   //----- !!!! --------//
 };
@@ -145,7 +147,7 @@ Zetta.prototype.use = function() {
   ///-----------ECLUB ------------------
   //If the scout is ours, save it!
   if(scout._name === 'ConcentratorScout') {
-      self._concentratorScout = scout;
+    self._concentratorScout = scout;
   }
 
   ///-----------!!! --------------------
