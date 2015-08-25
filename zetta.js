@@ -59,7 +59,7 @@ var Zetta = module.exports = function(opts) {
 
   this._cloudSocket = '';
   this._hubSocket = '';
-  this._uuid = "00000001";
+  this._uuid = '00000000';
   this._cloud = '';
   this._onCloud = false;
   //Our scouts
@@ -88,6 +88,7 @@ Zetta.prototype.name = function(name) {
 
   this._name = name;
   this.id = this._name;
+  this._uuid = this._name;
   return this;
 };
 

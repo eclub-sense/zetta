@@ -7,6 +7,7 @@
     "api-media-type": "^0.1.0",
     "argo": "^0.6.0",
     "argo-formatter-siren": "0.0.0",
+    "argo-oauth2-package": "0.0.2",
     "async": "^0.9.0",
     "calypso": "^0.3.0",
     "calypso-level": "^0.5.0",
