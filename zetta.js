@@ -65,6 +65,8 @@ var Zetta = module.exports = function(opts) {
   //Our scouts
   this._concentratorScout = '';
   this._hubScout = undefined;
+  //Temporary OVERIDE
+  this._myIP = undefined;
 
   //----- !!!! --------//
 };
@@ -114,6 +116,10 @@ Zetta.prototype.getName = function() {
 
 Zetta.prototype.onCloud = function(onCloud) {
   this._onCloud = onCloud;
+};
+
+Zetta.prototype.myIP = function(ip) {
+  this._myIP = ip;
 };
 
 /// ---------------------------------------------
