@@ -67,6 +67,7 @@ var Zetta = module.exports = function(opts) {
   this._hubScout = undefined;
   //Temporary OVERIDE
   this._myIP = undefined;
+  this._useOAuth2 = false;
 
   //----- !!!! --------//
 };
@@ -120,6 +121,10 @@ Zetta.prototype.onCloud = function(onCloud) {
 
 Zetta.prototype.myIP = function(ip) {
   this._myIP = ip;
+};
+
+Zetta.prototype.oauth2 = function(useOAuth) {
+  this._useOAuth2 = useOAuth;
 };
 
 /// ---------------------------------------------
