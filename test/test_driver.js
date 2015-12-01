@@ -1,6 +1,8 @@
+var util = require('util');
 var PubSub = require('../lib/pubsub_service');
 var Logger = require('../lib/logger');
 var Runtime = require('../zetta_runtime');
+var Device = Runtime.Device;
 var Scientist = require('zetta-scientist');
 var assert = require('assert');
 var SensorDriver = require('./fixture/sensor_driver');
@@ -30,6 +32,14 @@ describe('Driver', function() {
 
   it('should be attached to the zetta runtime', function() {
     assert.ok(Runtime.Device);
+  });
+
+  it('should expose an enableStream function', function() {
+    assert.ok(Device.prototype.enableStream);  
+  });
+  
+  it('should expose a disableStream function', function() {
+    assert.ok(Device.prototype.disableStream);
   });
 
   describe('Configuration', function() {
@@ -72,9 +82,18 @@ describe('Driver', function() {
 
   describe('Transitions', function() {
 
-    it('shuld not throw when calling an invalid transition name.', function(done) {
+    it('should not throw when calling an invalid transition name.', function(done) {
       machine.call('not-a-transition', function(err) {
         assert(err);
+        done();
+      });
+    });
+
+    it('should not throw when calling a transition when destroyed.', function(done) {
+      machine.state = 'zetta-device-destroy';
+      machine.call('prepare', function(err) {
+        assert(err);
+        assert.equal(err.message, 'Machine destroyed. Cannot use transition prepare');
         done();
       });
     });
@@ -293,5 +312,139 @@ describe('Driver', function() {
     
   });
 
+  describe('Remote Update and Fetch Hooks', function() {
 
+    it('can pass config a remoteFetch function to be called when .properties() is called', function() {
+      var Device = Runtime.Device;
+      var SomeDevice = function() {
+        this.hidden = 'hidden prop';
+        Device.call(this);
+      };
+      util.inherits(SomeDevice, Device);
+      SomeDevice.prototype.init = function(config) {
+        config
+          .type('some-device')
+          .name('device-1')
+          .remoteFetch(function() {
+            assert.equal(this.hidden, 'hidden prop');
+            return { prop: 123 };
+          })
+      };
+
+      var machine = Scientist.init(Scientist.create(SomeDevice));
+      assert.deepEqual(machine.properties(), { 
+        name: 'device-1',
+        prop: 123,
+        type: 'some-device',
+        id: machine.id
+      });
+    })
+
+    it('handle remote update method, will update non reserved properties and remove old properties', function(done) {
+      var Device = Runtime.Device;
+      var SomeDevice = function() {
+        this.ip = '1.2.3.4';
+        this.mutable = 'abc';
+        this.deleted = 'gone after update';
+        Device.call(this);
+      };
+      util.inherits(SomeDevice, Device);
+      SomeDevice.prototype.init = function(config) {
+        config
+          .type('some-device')
+          .name('device-1');
+      };
+
+      var machine = Scientist.init(Scientist.create(SomeDevice));
+      machine._registry = reg;
+      machine._pubsub = pubsub;
+      machine._log = log;
+      machine._handleRemoteUpdate({ mutable: 123 }, function(err) {
+        assert.equal(err, null);
+        assert.equal(machine.ip, undefined);
+        assert.equal(machine.mutable, 123);
+        assert.equal(machine.deleted, undefined);
+        done();
+      });
+    })
+
+
+    it('can pass config a remoteUpdate function to be called when remoteUpdates are called', function(done) {
+      var Device = Runtime.Device;
+      var SomeDevice = function() {
+        this.ip = '1.2.3.4';
+        this.mutable = 'abc';
+        this.deleted = 'gone after update';
+        Device.call(this);
+      };
+      util.inherits(SomeDevice, Device);
+      SomeDevice.prototype.init = function(config) {
+        config
+          .type('some-device')
+          .name('device-1')
+          .remoteUpdate(function(properties, cb) {
+            var self = this;
+            // make sure ip cant be updated
+            delete properties.ip;
+
+            Object.keys(properties).forEach(function(key) {
+              self[key] = properties[key];
+            });
+
+            this.save(cb);
+          })
+      };
+
+      var machine = Scientist.init(Scientist.create(SomeDevice));
+      machine._registry = reg;
+      machine._pubsub = pubsub;
+      machine._log = log;
+      machine._handleRemoteUpdate({ mutable: 123 }, function(err) {
+        assert.equal(err, null);
+        assert.equal(machine.ip, '1.2.3.4');
+        assert.equal(machine.mutable, 123);
+        done();
+      });
+    });
+  });
+
+  describe('Deletion', function() {
+    it('should have a destroy function', function() {
+      assert.ok(machine.destroy);  
+    });     
+
+    it('should emit a destroy event when destroy is called.', function(done) {
+      machine.on('destroy', function(m) {
+        assert.ok(m);
+        done();  
+      });  
+      machine.destroy();
+    });
+
+    it('handle remote destroy method, will return true by default', function(done) {
+      var Device = Runtime.Device;
+      var SomeDevice = function() {
+        this.ip = '1.2.3.4';
+        this.mutable = 'abc';
+        this.deleted = 'gone after update';
+        Device.call(this);
+      };
+      util.inherits(SomeDevice, Device);
+      SomeDevice.prototype.init = function(config) {
+        config
+          .type('some-device')
+          .name('device-1');
+      };
+
+      var machine = Scientist.init(Scientist.create(SomeDevice));
+      machine._registry = reg;
+      machine._pubsub = pubsub;
+      machine._log = log;
+      machine._handleRemoteDestroy(function(err, destroyFlag) {
+        assert.equal(err, null);
+        assert.equal(destroyFlag, true);
+        done();
+      });
+    });
+  });
 });

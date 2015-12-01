@@ -80,6 +80,35 @@ describe('Remote queries', function() {
       });
     });
 
+    it('should fire remote query for both server detroit1 and chicago', function(done) {
+      var query1 = cloud.runtime.from('detroit1').where({type: 'testdriver'});
+      var query2 = cloud.runtime.from('chicago').where({type: 'testdriver'});
+      cloud.runtime.observe([query1, query2], function(d1, d2){
+        done();
+      });
+    })
+
+    it('should return devices from both Z1 and Z2 after peers connects', function(done) {
+      var query1 = cloud.runtime.from('Z1').where({type: 'testdriver'});
+      var query2 = cloud.runtime.from('Z2').where({type: 'testdriver'});
+      cloud.runtime.observe([query1, query2], function(d1, d2){
+        done();
+      });
+
+      var z = zetta({ registry: new MemRegistry(), peerRegistry: new MemPeerRegistry() })
+        .name('Z1')
+        .use(Scout)
+        .silent()
+        .link('http://' + urlRoot)
+        .listen(0);
+
+      var z = zetta({ registry: new MemRegistry(), peerRegistry: new MemPeerRegistry() })
+        .name('Z2')
+        .use(Scout)
+        .silent()
+        .link('http://' + urlRoot)
+        .listen(0);
+    })
 
     it('should return all test devices when quering .from(\'*\')', function(done) {
       var query = cloud.runtime.from('*').where({type: 'testdriver'});
@@ -254,7 +283,6 @@ describe('Remote queries', function() {
       socket.on('open', function(err) {
         socket.on('message', function(data) {
           var json = JSON.parse(data);
-
           // test links are properly set
           json.links.forEach(function(link) {
             assert(link.href.indexOf(urlLocal) > -1)
